@@ -1,3 +1,5 @@
 2023/05/31 09:46:54 mssql: login error: Login failed for user 'reek'.
 2023/05/31 09:57:13 mssql: login error: Login failed for user 'reek'.
 2023/05/31 10:17:51 mssql: Conversion failed when converting the nvarchar value '*' to data type int.
+2023/05/31 13:45:47 mssql: Conversion failed when converting the nvarchar value ']' to data type int.
+2023/05/31 13:48:08 mssql: Conversion failed when converting the nvarchar value '1111]' to data type int.
