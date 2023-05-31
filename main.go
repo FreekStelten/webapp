@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/microsoft/go-mssqldb"
 )
@@ -29,7 +30,9 @@ func lookupHandler(w http.ResponseWriter, r *http.Request) {
 	// Connect to the Azure database
 	db, err := sql.Open("sqlserver", connString)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		logToFile(err.Error()) // Log the error to the file
+		return
 	}
 	defer db.Close()
 
@@ -38,6 +41,8 @@ func lookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println(err)
+		logToFile(err.Error()) // Log the error to the file
+		return
 	}
 	// Close the query, after the function has returned.
 	defer selectLicencePlate.Close()
@@ -49,16 +54,32 @@ func lookupHandler(w http.ResponseWriter, r *http.Request) {
 		err := selectLicencePlate.Scan(&licenceplate.Name, &licenceplate.Licenceplate, &licenceplate.Startdatum, &licenceplate.Einddatum)
 		if err != nil {
 			log.Println(err)
+			logToFile(err.Error()) // Log the error to the file
+			return
 		}
 		licencePlates = append(licencePlates, licenceplate)
 	}
 	err = selectLicencePlate.Err()
 	if err != nil {
 		log.Println(err)
+		logToFile(err.Error()) // Log the error to the file
+		return
 	}
 	fmt.Println(licencePlates)
 	output := "Hallo " + licenceplate.Name + ", welkom op fonteyn vakantieparken. Uw kentekenplaat is: " + licenceplate.Licenceplate + ". U heeft toegang van " + licenceplate.Startdatum + " tot " + licenceplate.Einddatum + ".\n" + "U kunt nu het park oprijden.\n"
 	io.WriteString(w, output)
+}
+
+func logToFile(msg string) {
+	file, err := os.OpenFile("errors.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println("Failed to open error log file:", err)
+		return
+	}
+	defer file.Close()
+
+	log.SetOutput(file)
+	log.Println(msg)
 }
 
 func main() {
