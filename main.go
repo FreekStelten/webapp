@@ -34,7 +34,7 @@ func lookupHandler(w http.ResponseWriter, r *http.Request) {
 		logToFile(err.Error()) // Log the error to the file
 		return
 	}
-	defer db.Close()
+	defer db.Close() 
 
 	// Database query for selecting all of the reservation info.
 	selectLicencePlate, err := db.Query("SELECT Name, licenceplate, begindatum, Einddatum FROM slagboom_db WHERE licenceplate = @licenceplate", sql.Named("licencePlate", licencePlate))
