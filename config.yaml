@@ -1,0 +1,5 @@
+server: "databasefonteyn.database.windows.net"
+user_id: "freek"
+password: "StudentStudent!"
+port: "1433"
+database: "Databasefonteyn"
