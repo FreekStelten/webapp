@@ -211,6 +211,6 @@ func main() {
 	http.HandleFunc("/", serveIndexPage)
 	http.HandleFunc("/lookup", lookupHandler)
 	http.HandleFunc("/login", loginHandler)
-	fmt.Println("Server started on http://localhost:8080/login")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Println("Server started on http://localhost:80/login")
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
