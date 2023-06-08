@@ -44,6 +44,7 @@ Deze toepassing is bedoeld als een eenvoudige demonstratie en kan verder worden 
 
 # Foutmeldingen
 Mogelijke foutmeldingen bij het gebruik van de toepassing:
+
 "Fout bij het verbinden met de database"
 
 Deze fout treedt op als de toepassing geen verbinding kan maken met de Microsoft SQL Server-database. Controleer of de database correct is geconfigureerd en bereikbaar is vanaf de toepassingshost.
