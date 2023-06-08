@@ -27,7 +27,7 @@ go run main.go
 6. De webtoepassing wordt gestart en is beschikbaar op http://localhost:80.
 
 # Gebruik
-1. Open uw webbrowser en ga naar http://localhost:80.
+1. Open uw webbrowser en ga naar http://localhost:80/login.
 2. U wordt gevraagd om in te loggen met een wachtwoord.
 3. Voer het juiste wachtwoord in het daarvoor bestemde veld in.
 4. Klik op de knop "Inloggen".
