@@ -11,11 +11,11 @@ Dit is een eenvoudige webtoepassing die is geschreven in Go. Het biedt een gebru
 2. Maak een nieuwe directory en plaats het broncodebestand (main.go) in die directory.
 3. Maak een configuratiebestand genaamd config.yaml in dezelfde directory met de volgende structuur:
 -----------------------
-server: [servernaam]
-user_id: [gebruikersnaam]
-password: [wachtwoord]
-port: [poortnummer]
-database: [databasenaam]
+- server: [servernaam]
+- user_id: [gebruikersnaam]
+- password: [wachtwoord]
+- port: [poortnummer]
+- database: [databasenaam]
 -----------------------
 Vervang [servernaam], [gebruikersnaam], [wachtwoord], [poortnummer] en [databasenaam] door de juiste databaseverbindinggegevens.
 
