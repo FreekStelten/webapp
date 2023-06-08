@@ -1,5 +1,9 @@
-server: "databasefonteyn.database.windows.net"
-user_id: "freek"
-password: "StudentStudent!"
-port: "1433"
-database: "Databasefonteyn"
+database:
+  server: "databasefonteyn.database.windows.net"
+  user_id: "freek"
+  password: "StudentStudent!"
+  port: "1433"
+  database: "Databasefonteyn"
+login:
+  hash: 788262d08f9b694ddd6ebb45ccfc9e6b3081860331aa1d1b111466b7c44157f2
+  salt: iX3cKTdD6veWLb3uLwjJ5nXpBjJ3zK

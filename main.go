@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"fmt"
 	"io"
@@ -16,11 +17,21 @@ import (
 // Config structuur die de configuratiegegevens bevat voor de databaseverbinding. De velden in de structuur worden
 // geannoteerd met yaml:"..." om de bijbehorende YAML-sleutels aan te geven.
 type Config struct {
+	Database DatabaseConfig `yaml:"database"`
+	Login    LoginConfig    `yaml:"login"`
+}
+
+type DatabaseConfig struct {
 	Server   string `yaml:"server"`
 	UserID   string `yaml:"user_id"`
 	Password string `yaml:"password"`
 	Port     string `yaml:"port"`
 	Database string `yaml:"database"`
+}
+
+type LoginConfig struct {
+	Hash string `yaml:"hash"`
+	Salt string `yaml:"salt"`
 }
 
 // VehicleData bevat de gegevens van een voertuig
@@ -47,22 +58,21 @@ func loadConfig() (*Config, error) {
 	}
 	defer file.Close()
 
-	var config Config
-	err = yaml.NewDecoder(file).Decode(&config)
+	err = yaml.NewDecoder(file).Decode(&ConfigYAML)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 
-	return &config, nil
+	return &ConfigYAML, nil
 }
 
 // connectToDatabase maakt verbinding met de database
 // De connectToDatabase functie maakt verbinding met azure database met behulp van de opgegeven Config structuur. Het genereert een
 // verbindingsreeks op basis van de configuratiegegevens en opent een databaseverbinding met behulp van de "sqlserver" driver.
 // Als er een fout optreedt bij het verbinden met de database, wordt een fout geretourneerd. Anders wordt een verwijzing naar de sql.DB structuur geretourneerd.
-func connectToDatabase(config *Config) (*sql.DB, error) {
+func connectToDatabase() (*sql.DB, error) {
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%s;database=%s;",
-		config.Server, config.UserID, config.Password, config.Port, config.Database)
+		ConfigYAML.Database.Server, ConfigYAML.Database.UserID, ConfigYAML.Database.Password, ConfigYAML.Database.Port, ConfigYAML.Database.Database)
 
 	db, err := sql.Open("sqlserver", connString)
 	if err != nil {
@@ -105,29 +115,34 @@ func queryLicencePlate(db *sql.DB, licencePlate string) ([]VehicleData, error) {
 	return licencePlates, nil
 }
 
-// De loginHandler functie behandelt het inlogverzoek. Als de methode "GET" is, wordt het bestand "login.html" geserveerd. Als de
-// methode "POST" is, wordt het ingevoerde wachtwoord gecontroleerd. Als het wachtwoord onjuist is, wordt de inlogstatus op false gezet
-// en een foutmelding naar de gebruiker gestuurd. Anders wordt de inlogstatus op true gezet en wordt de gebruiker omgeleid naar de hoofdpagina.
+
+// De loginHandler-functie verwerkt het inlogproces. Bij een "GET"-verzoek wordt de inlogpagina weergegeven. Bij een "POST"-verzoek wordt het ingediende wachtwoord gehasht 
+// en vergeleken met de opgeslagen hash-waarde. Als ze overeenkomen, wordt de gebruiker ingelogd en anders krijgt hij een foutmelding.
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		http.ServeFile(w, r, "login.html")
 	} else if r.Method == "POST" {
 		password := r.FormValue("password")
+		passwordHash := generatePasswordHash(password)
 
-		// Controleer of het wachtwoord correct is, bij false wordt error getoond bij true kan je door naar de kentekeninvoer pagina
-		if password != "secret" {
+		if passwordHash != ConfigYAML.Login.Hash {
 			loggedIn = false
 			http.Error(w, "Foutief wachtwoord opgegeven!", http.StatusUnauthorized)
 			return
-		} else {
-			loggedIn = true
 		}
 
-		// hierbij wordt je geRedirect naar de kentekenpagina/ hoofdpagina als het op true komt te staan.
+		loggedIn = true
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 }
 
+// De functie generatePasswordHash neemt een wachtwoord als invoer en retourneert de gehashte versie ervan. Het wachtwoord wordt gecombineerd met een geheim zout 
+// en vervolgens wordt de SHA-256 hashfunctie toegepast op de resulterende byte-array. Het resultaat wordt teruggegeven als een hexadecimale string.
+func generatePasswordHash(password string) string {
+	passwordByte := []byte(password + ConfigYAML.Login.Salt)
+	passwordHashByte := sha256.Sum256(passwordByte)
+	return fmt.Sprintf("%x", passwordHashByte[:])
+}
 // Dit is een variabele die de inlogstatus bijhoudt.
 var loggedIn bool
 
@@ -142,19 +157,10 @@ func lookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	licencePlate := r.FormValue("licensePlate")
 
-	// Hier wordt de functie loadConfig aangeroepen om de configuratiegegevens te laden.
-	// Als er een fout optreedt, wordt de fout gelogd en de functie gestopt.
-	config, err := loadConfig()
-	if err != nil {
-		log.Println(err)
-		logToFile(err.Error()) // Log de fout naar het bestand
-		return
-	}
-
 	// hier wordt de functie connectToDatabase aangeroepen om verbinding te maken met de azure database met behulp van de geladen
 	// configuratiegegevens. Als er een fout optreedt, wordt de fout gelogd en de functie gestopt. De databaseverbinding wordt ook
 	// uitgesteld gesloten met behulp van defer om ervoor te zorgen dat de verbinding uiteindelijk wordt gesloten.
-	db, err := connectToDatabase(config)
+	db, err := connectToDatabase()
 	if err != nil {
 		log.Println(err)
 		logToFile(err.Error()) // Log de fout naar het bestand
@@ -204,10 +210,24 @@ func serveIndexPage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
 }
 
+var ConfigYAML Config
+
+func LoadYaml() {
+	// Hier wordt de functie loadConfig aangeroepen om de configuratiegegevens te laden.
+	// Als er een fout optreedt, wordt de fout gelogd en de functie gestopt.
+	_, err := loadConfig()
+	if err != nil {
+		log.Println(err)
+		logToFile(err.Error()) // Log de fout naar het bestand
+		return
+	}
+}
+
 // De main-functie is het startpunt van het programma. Het configureert de verschillende HTTP-handlers voor de verschillende routes ("/", "/lookup" en "/login").
 // Het drukt ook een bericht af om aan te geven dat de server is gestart op "http://localhost:8080/login". Ten slotte start het de HTTP-server met behulp van
 // http.ListenAndServe en logt eventuele fouten die optreden tijdens het uitvoeren van de server.
 func main() {
+	loadConfig()
 	http.HandleFunc("/", serveIndexPage)
 	http.HandleFunc("/lookup", lookupHandler)
 	http.HandleFunc("/login", loginHandler)
